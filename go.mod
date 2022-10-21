@@ -3,7 +3,7 @@ module github.com/toolsdotgo/lash
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.16.16
+	github.com/aws/aws-sdk-go-v2 v1.17.0
 	github.com/aws/aws-sdk-go-v2/config v1.17.8
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.23
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.6
