@@ -1,0 +1,39 @@
+name: Push
+on: [push]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.19.0'
+      - name: lint the go
+        uses: golangci/golangci-lint-action@v3
+  gosec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: lint the go
+        uses: securego/gosec@master
+        with:
+          args: ./...
+  build:
+    needs: [lint, gosec]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.19.0'
+      - name: build
+        run: bin/build.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: upload artefacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: build/
