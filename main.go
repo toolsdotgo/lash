@@ -275,7 +275,7 @@ fuzzy:
 		qs.Set("Destination", "https://console.aws.amazon.com/")
 		qs.Set("Action", "login")
 		u.RawQuery = qs.Encode()
-		fmt.Fprintf(os.Stdout, "%s\n", u.String())
+		fmt.Println(u.String())
 		os.Exit(0)
 	}
 
