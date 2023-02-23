@@ -226,13 +226,13 @@ fuzzy:
 		b, err := json.Marshal(t)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "cant marshal keys: %v\n", err)
-			os.Exit(1)
+			os.Exit(12)
 		}
 
 		req, err := http.NewRequest("GET", fedUrl, nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "cant create federation request: %v\n", err)
-			os.Exit(1)
+			os.Exit(12)
 		}
 
 		qf := req.URL.Query()
@@ -240,36 +240,39 @@ fuzzy:
 		qf.Add("SessionType", "json")
 		qf.Add("Session", string(b))
 		req.URL.RawQuery = qf.Encode()
-		fmt.Fprintf(os.Stderr, "url: %s\n", req.URL.String())
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to get federation response: %v\n", err)
-			os.Exit(1)
+			os.Exit(12)
 		}
-		defer resp.Body.Close()
+		defer func() {
+			err := resp.Body.Close()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to close federation response body: %v\n", err)
+			}
+		}()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "cant read federation response body: %v\n", err)
-			os.Exit(1)
+			os.Exit(12)
 		}
-		fmt.Fprintf(os.Stderr, "%s\n", body)
 		var fedResp federationResponse
 		err = json.Unmarshal(body, &fedResp)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "cant unmarshal federation response body: %v\n", err)
-			os.Exit(1)
+			os.Exit(12)
 		}
 		signinToken := fedResp.SigninToken
 
 		u, err := url.Parse(fedUrl)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "cant parse sign in url: %v\n", err)
-			os.Exit(1)
+			os.Exit(12)
 		}
 		qs := u.Query()
 		qs.Set("SigninToken", signinToken)
-		qs.Set("Destination", fmt.Sprintf("https://%s.console.aws.amazon.com/", cfg.Region))
+		qs.Set("Destination", "https://console.aws.amazon.com/")
 		qs.Set("Action", "login")
 		u.RawQuery = qs.Encode()
 		fmt.Fprintf(os.Stdout, "%s\n", u.String())
@@ -734,13 +737,14 @@ usage: lash [flags] [profile [command [args...]]]
 
 SUMMARY
   lash integrates with aws sso and fully manages the aws credentials file
-  use it either as an account picker or a command shim
+  use it either as an account picker, a command shim, or to get a console url
 
 FLAGS
   -d  the directory with the creds and lash/ subdirectory (basedir)
   -h  print this help
   -n  dont use the nickname map from config
   -r  refresh the oidc token and the profiles (full refresh)
+  -u  generate an aws console url for the chosen role
   -v  print the program version
 
   -init  initializes the lash config.json file (and lash/ subdirectory) by
@@ -804,5 +808,6 @@ EXIT CODES
   6   problem managing the credentials file (permissions or existence)
   9   problem with supplied command (command shim mode)
   11  supplied profile slug has no matches or more than one match
+  12  problem getting console signin url
   64  incorrect invocation (usage)
 `
