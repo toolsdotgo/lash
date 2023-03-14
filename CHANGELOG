@@ -1,3 +1,7 @@
+v1.1.1
+
+- Now with 100% more authentic Darwin ARM64 binaries! - Thanks to @samjarrett
+
 v1.1.0
 
 - Add support for generating an AWS Console URL in a selected Role
