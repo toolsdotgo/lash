@@ -36,7 +36,7 @@ for p in linux darwin darwin-arm windows; do
     [[ $p == windows ]] && fn+=".exe"
 
     echo ":golang::$p: $fn"
-    GOARCH=amd64 GOOS=$p CGO_ENABLED=0 \
+    GOARCH=$arch GOOS=$p CGO_ENABLED=0 \
         go build -ldflags="$ld" -o "./build/$fn" || die "cant build"
 done
 
