@@ -4,13 +4,11 @@
 
 > for aws sso
 
-
-# summary
+## summary
 
 `awscli2` has sso support, but it's pretty annoying. `lash` is a modest go program which smooths the experience.
 
-
-# quickstart
+## quickstart
 
 get the latest binary from the [releases page](https://github.com/toolsdotgo/lash/releases)
 
@@ -30,17 +28,15 @@ $ lash -init
 
 This will create an initial configuration file in `~/.aws/lash` called `config.json` - feel free to edit this file add account nicknames.
 
-
-## build from source
+### build from source
 
 if you have a functional `go` toolchain, clone this repo and:
 
 ```bash
-$ go install
+go install
 ```
 
-
-# usage
+## usage
 
 > use it as account picker or a command shim
 
@@ -56,7 +52,6 @@ use one of the following roles:
 ```
 
 the first argument is a string which may match a profile name fully or partially. a partial match will print the profile list and indicate which profile names partially matched.
-
 
 ```bash
 $ lash user
@@ -81,8 +76,7 @@ $ lash r-d
 
 those credentials are written to the `~/.aws/credentials` file (by default) with the profile name `default`.
 
-
-## command shim mode
+### command shim mode
 
 > a credentials file will not be written in command shim mode
 
@@ -112,8 +106,25 @@ $ lash user-prod aws lambda list-functions --query Functions[].FunctionName
 $ aws sts get-caller-identity
 ```
 
+### console url
 
-# config
+> go on, open another browser window
+
+if the `-u` flag is set before the role name, an AWS Console Signin URL will be generated.
+
+```bash
+# just print the url out on stdout and click it/copypasta it manually
+$ lash -u user-dev
+selected: user-dev
+https://signin.aws.amazon.com/federation?Action=login&Destination=https%3A%2F%2Fconsole.aws.amazon.com%2F&SigninToken=...
+
+# pass it directly to your browser, maybe with a specific profile selected
+$ google-chrome --profile-directory=Production $(lash -u user-prod)
+selected: user-prod
+# and suddenly focus is stolen by a browser
+```
+
+## config
 
 > use `lash -init` to create the subdirectory and config.json
 
@@ -137,7 +148,7 @@ $ <~/.aws/lash/config.json
 }
 ```
 
-## nicknames (nicks)
+### nicknames (nicks)
 
 > you can use `-n` (no nicks) to disable nickname matching
 
@@ -148,27 +159,24 @@ $ lash lab
 selected (via nicks): user-lab-admin
 ```
 
-
-## stripping repeated strings
+### stripping repeated strings
 
 `strip_prefix` and `strip_suffix` can be used to remove repeated low-value strings from account names: perhaps some accounts are prefixed with a company name, for example.
 
+## troubleshooting
 
-# troubleshooting
-
-## refreshing
+### refreshing
 
 > clear things out and get the lastest profiles
 
 use the `-r` flag to get yourself out of trouble - it deletes the caches, which:
 
- * generates a new oidc token (browser pop)
- * recreates the profiles cache (accounts and roles)
+* generates a new oidc token (browser pop)
+* recreates the profiles cache (accounts and roles)
 
+## raw help
 
-# raw help
-
-```
+```text
 ──╖  ╭─┐╭──┐ ╥──┤ less annoying sso helper
   ║  ┼─┤┴─┐┼─╫  └───╴╶─╶───────╶─────────╱╴╴╴
 ──╨──┘ └──┘│ ╨╴
@@ -179,13 +187,14 @@ usage: lash [flags] [profile [command [args...]]]
 
 SUMMARY
   lash integrates with aws sso and fully manages the aws credentials file
-  use it either as an account picker or a command shim
+  use it either as an account picker, a command shim, or to get a console url
 
 FLAGS
   -d  the directory with the creds and lash/ subdirectory (basedir)
   -h  print this help
   -n  dont use the nickname map from config
   -r  refresh the oidc token and the profiles (full refresh)
+  -u  generate an aws console url for the chosen role
   -v  print the program version
 
   -init  initializes the lash config.json file (and lash/ subdirectory) by
@@ -215,19 +224,23 @@ CONFIG FILE
   is JSON - soz
   it's an object with the following top-level keys
 
-  region        the aws region, e.g.,, ap-southeast-2
-  start_url     the awsapps sso landing url
-  nicks         [optional] an object with keys for role nicknames and the value
-                of the actual role
-  strip_prefix  [optional] a string to strip from the beginning of profile
-                names. e.g., "company-slug-"
-  strip_suffix  [optional] a string to strip from the end of profile names.
+  region             the aws region, e.g.,, ap-southeast-2
+  start_url          the awsapps sso landing url
+  nicks              [optional] an object with keys for role nicknames and the
+                     value of the actual role
+  role_strip_prefix  [optional] a string to strip from the beginning of a role
+                     name. e.g. "team-name-"
+  role_strip_suffix  [optional] a string to strip from the end of a role name
+                     e.g. "-developer"
+  strip_prefix       [optional] a string to strip from the beginning of profile
+                     names. e.g., "company-slug-"
+  strip_suffix       [optional] a string to strip from the end of profile names
 
   e.g.: {
-	  "region": "ap-southeast-2",
-	  "start_url": "https://startup.awsapps.com/start",
-	  "nicks": {"lab": "project-lab-poweruser"},
-	  "strip_prefix": "startup-"
+    "region": "ap-southeast-2",
+    "start_url": "https://startup.awsapps.com/start",
+    "nicks": {"lab": "project-lab-poweruser"},
+    "strip_prefix": "startup-"
   }
 
 CUSTOM CREDENTIALS
@@ -245,5 +258,6 @@ EXIT CODES
   6   problem managing the credentials file (permissions or existence)
   9   problem with supplied command (command shim mode)
   11  supplied profile slug has no matches or more than one match
+  12  problem getting console signin url
   64  incorrect invocation (usage)
 ```

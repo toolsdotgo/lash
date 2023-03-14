@@ -7,6 +7,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -70,6 +73,16 @@ type badge struct {
 	role string // role name
 }
 
+type sessionToken struct {
+	SessionID    string `json:"sessionId"`
+	SessionKey   string `json:"sessionKey"`
+	SessionToken string `json:"sessionToken"`
+}
+
+type federationResponse struct {
+	SigninToken string
+}
+
 func main() {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
@@ -83,6 +96,7 @@ func main() {
 	finit := flag.Bool("init", false, "make the lash sub-directory and re-create the config.json file")
 	fnonick := flag.Bool("n", false, "disable nicknames")
 	frefresh := flag.Bool("r", false, "refresh caches (token and profiles)")
+	furl := flag.Bool("u", false, "generate an aws console url for the chosen role")
 	fver := flag.Bool("v", false, "print program version")
 	flag.Parse()
 
@@ -200,6 +214,69 @@ fuzzy:
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cant get keys for %s: %v\n", choice, err)
 		os.Exit(5)
+	}
+
+	if *furl {
+		fedUrl := "https://signin.aws.amazon.com/federation"
+		t := sessionToken{
+			SessionID:    keys["AccessKeyId"],
+			SessionKey:   keys["SecretAccessKey"],
+			SessionToken: keys["SessionToken"],
+		}
+		b, err := json.Marshal(t)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "cant marshal keys: %v\n", err)
+			os.Exit(12)
+		}
+
+		req, err := http.NewRequest("GET", fedUrl, nil)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "cant create federation request: %v\n", err)
+			os.Exit(12)
+		}
+
+		qf := req.URL.Query()
+		qf.Add("Action", "getSigninToken")
+		qf.Add("SessionType", "json")
+		qf.Add("Session", string(b))
+		req.URL.RawQuery = qf.Encode()
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to get federation response: %v\n", err)
+			os.Exit(12)
+		}
+		defer func() {
+			err := resp.Body.Close()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to close federation response body: %v\n", err)
+			}
+		}()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "cant read federation response body: %v\n", err)
+			os.Exit(12)
+		}
+		var fedResp federationResponse
+		err = json.Unmarshal(body, &fedResp)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "cant unmarshal federation response body: %v\n", err)
+			os.Exit(12)
+		}
+		signinToken := fedResp.SigninToken
+
+		u, err := url.Parse(fedUrl)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "cant parse sign in url: %v\n", err)
+			os.Exit(12)
+		}
+		qs := u.Query()
+		qs.Set("SigninToken", signinToken)
+		qs.Set("Destination", "https://console.aws.amazon.com/")
+		qs.Set("Action", "login")
+		u.RawQuery = qs.Encode()
+		fmt.Println(u.String())
+		os.Exit(0)
 	}
 
 	// write the credentials file and exit zero
@@ -660,13 +737,14 @@ usage: lash [flags] [profile [command [args...]]]
 
 SUMMARY
   lash integrates with aws sso and fully manages the aws credentials file
-  use it either as an account picker or a command shim
+  use it either as an account picker, a command shim, or to get a console url
 
 FLAGS
   -d  the directory with the creds and lash/ subdirectory (basedir)
   -h  print this help
   -n  dont use the nickname map from config
   -r  refresh the oidc token and the profiles (full refresh)
+  -u  generate an aws console url for the chosen role
   -v  print the program version
 
   -init  initializes the lash config.json file (and lash/ subdirectory) by
@@ -730,5 +808,6 @@ EXIT CODES
   6   problem managing the credentials file (permissions or existence)
   9   problem with supplied command (command shim mode)
   11  supplied profile slug has no matches or more than one match
+  12  problem getting console signin url
   64  incorrect invocation (usage)
 `
