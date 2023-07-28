@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.19.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.29
 	github.com/aws/aws-sdk-go-v2/service/sso v1.12.14
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.13
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.14
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 )
 
