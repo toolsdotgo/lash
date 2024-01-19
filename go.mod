@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/config v1.26.4
-	github.com/aws/aws-sdk-go-v2/service/sso v1.18.6
+	github.com/aws/aws-sdk-go-v2/service/sso v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.7
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 )
