@@ -9,7 +9,7 @@ jobs:
         with:
           go-version: '>=1.19.0'
       - name: lint the go
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
   gosec:
     runs-on: ubuntu-latest
     steps:
